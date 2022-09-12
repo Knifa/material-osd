@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "material-osd"
+version = "0.1.0"
+description = ""
+authors = ["Daniel Callander <knifacat@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+Pillow = "^9.2.0"
+pycairo = "^1.21.0"
+cffi = "^1.15.1"
+
+[tool.poetry.dev-dependencies]
+black = "^22.8.0"
+flake8 = "^5.0.4"
+mypy = "^0.971"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
