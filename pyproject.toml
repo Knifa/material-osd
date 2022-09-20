@@ -9,6 +9,7 @@ python = "^3.10"
 Pillow = "^9.2.0"
 pycairo = "^1.21.0"
 cffi = "^1.15.1"
+CairoSVG = "^2.5.2"
 
 [tool.poetry.dev-dependencies]
 black = "^22.8.0"
