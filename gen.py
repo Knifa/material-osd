@@ -1,4 +1,4 @@
-from typing import cast, Callable
+from typing import Literal, Sequence, Tuple, Union, cast, Callable
 import dataclasses
 import math
 import cairosvg
@@ -9,6 +9,7 @@ from PIL import (
     Image,
     ImageDraw,
     ImageFont,
+    ImageOps,
     PyAccess,
 )
 
@@ -22,7 +23,6 @@ TILE_ROW_COUNT = math.ceil(len(CHARS) / TILES_PER_ROW)
 
 FONT_PATH = "fonts/BebasNeue-Regular.ttf"
 FONT = ImageFont.truetype(
-    # "fonts/roboto/RobotoMono-Regular.ttf",
     FONT_PATH,
     math.floor(TILE_HEIGHT * 0.85),
 )
@@ -30,98 +30,123 @@ FONT = ImageFont.truetype(
 BACKGROUND = (0, 0, 0, 100)
 
 
+def load_svg(
+    path: str,
+    width: int | None = None,
+    height: int | None = None,
+) -> Image.Image:
+    svg_png = cairosvg.svg2png(
+        url=path,
+        parent_width=width,
+        parent_height=height,
+    )
+    svg_png = io.BytesIO(cast(bytes, svg_png))
+    svg_img = Image.open(svg_png)
+
+    return svg_img
+
+
+# @dataclasses.dataclass
+# class IconImage:
+#     index: int
+#     material_icon: str
+#     with_background: bool = True
+#     scale: float = 1.0
+
+#     def generate(self):
+#         out_img = Image.new("RGBA", (TILE_WIDTH, TILE_HEIGHT), (0, 0, 0, 0))
+
+#         icon_path = get_path_to_material_icon(self.material_icon)
+
+#         icon_img = Image.open(cast(str, icon_path))
+#         icon_img = icon_img.convert("RGBA")
+#         icon_img_a = icon_img.getchannel("A")
+#         icon_img_l = Image.new("L", icon_img.size, 255)
+#         icon_img = Image.merge(
+#             "LA",
+#             (
+#                 icon_img_l,
+#                 icon_img_a,
+#             ),
+#         )
+
+#         icon_img = icon_img.resize(
+#             (
+#                 int(TILE_WIDTH * self.scale),
+#                 int(TILE_WIDTH * self.scale),
+#             ),
+#             resample=Image.Resampling.BILINEAR,
+#         )
+
+#         scale_width_diff = TILE_WIDTH - icon_img.width
+#         scale_height_diff = TILE_HEIGHT - icon_img.height
+
+#         paste_x = scale_width_diff // 2
+#         paste_y = scale_height_diff // 2
+
+#         out_img.paste(
+#             icon_img,
+#             (paste_x, paste_y),
+#             icon_img,
+#         )
+
+#         if self.with_background:
+#             euclid = euclidean_distance_transform(out_img.getchannel("A"))
+#             out_img = add_outline_via_euclidean_distance_transform(out_img, euclid)
+
+#         return out_img
+
+
+def apply_outline(img: Image.Image) -> Image.Image:
+    euclid = euclidean_distance_transform(img.getchannel("A"))
+    img = add_outline_via_euclidean_distance_transform(img, euclid)
+
+    return img
+
+
 @dataclasses.dataclass
-class IconImage:
+class Icon:
     index: int
-    material_icon: str
-    with_background: bool = True
-    scale: float = 1.0
 
-    def generate(self):
-        out_img = Image.new("RGBA", (TILE_WIDTH, TILE_HEIGHT), (0, 0, 0, 0))
+    def __post_init__(self):
+        self.img = Image.new("RGBA", (TILE_WIDTH, TILE_HEIGHT), (0, 0, 0, 0))
+        self.draw = ImageDraw.Draw(self.img)
 
-        icon_path = get_path_to_material_icon(self.material_icon)
-
-        icon_img = Image.open(cast(str, icon_path))
-        icon_img = icon_img.convert("RGBA")
-        icon_img_a = icon_img.getchannel("A")
-        icon_img_l = Image.new("L", icon_img.size, 255)
-        icon_img = Image.merge(
-            "LA",
-            (
-                icon_img_l,
-                icon_img_a,
-            ),
-        )
-
-        icon_img = icon_img.resize(
-            (
-                int(TILE_WIDTH * self.scale),
-                int(TILE_WIDTH * self.scale),
-            ),
-            resample=Image.Resampling.BILINEAR,
-        )
-
-        scale_width_diff = TILE_WIDTH - icon_img.width
-        scale_height_diff = TILE_HEIGHT - icon_img.height
-
-        paste_x = scale_width_diff // 2
-        paste_y = scale_height_diff // 2
-
-        out_img.paste(
-            icon_img,
-            (paste_x, paste_y),
-            icon_img,
-        )
-
-        if self.with_background:
-            euclid = euclidean_distance_transform(out_img.getchannel("A"))
-            out_img = add_outline_via_euclidean_distance_transform(out_img, euclid)
-
-        return out_img
+    def generate(self) -> Image.Image:
+        raise NotImplementedError()
 
 
 @dataclasses.dataclass
-class IconSvg:
-    index: int
+class IconSvg(Icon):
     name: str
     scale: float = 1.0
     with_background: bool = True
+    offset_x: float = 0
+    offset_y: float = 0
 
     def generate(self):
-        out_img = Image.new("RGBA", (TILE_WIDTH, TILE_HEIGHT), (0, 0, 0, 0))
-
         icon_path = f"./node_modules/@mdi/svg/svg/{self.name}.svg"
         icon_img = self._load_svg(icon_path)
 
         scale_width_diff = TILE_WIDTH - icon_img.width
         scale_height_diff = TILE_HEIGHT - icon_img.height
 
-        paste_x = scale_width_diff // 2
-        paste_y = scale_height_diff // 2
+        paste_x = int(scale_width_diff / 2 + self.offset_x)
+        paste_y = int(scale_height_diff / 2 + self.offset_y)
 
-        out_img.paste(
-            icon_img,
-            (paste_x, paste_y),
-            icon_img,
-        )
+        self.img.paste(icon_img, (paste_x, paste_y))
 
         if self.with_background:
-            euclid = euclidean_distance_transform(out_img.getchannel("A"))
-            out_img = add_outline_via_euclidean_distance_transform(out_img, euclid)
+            self.img = apply_outline(self.img)
 
-        return out_img
+        return self.img
 
-    @staticmethod
-    def _load_svg(path: str) -> Image.Image:
-        svg_png = cairosvg.svg2png(
-            url=path,
-            parent_width=TILE_WIDTH,
-            parent_height=TILE_WIDTH,
+    def _load_svg(self, path: str) -> Image.Image:
+        svg_img = load_svg(
+            path,
+            width=int(TILE_WIDTH * self.scale),
+            height=int(TILE_WIDTH * self.scale),
         )
-        svg_png = io.BytesIO(cast(bytes, svg_png))
-        svg_img = Image.open(svg_png)
-
         svg_img_a = svg_img.getchannel("A")
         icon_img_l = Image.new("L", svg_img.size, 255)
 
@@ -137,31 +162,20 @@ class IconSvg:
 
 
 @dataclasses.dataclass
-class IconEmpty:
+class IconEmpty(Icon):
     index: int
+
+    def generate(self) -> Image.Image:
+        return self.img
 
 
 @dataclasses.dataclass
-class IconCustom:
-    index: int
-    generator: Callable[[], Image.Image]
-
-
-@dataclasses.dataclass
-class IconText:
-    index: int
+class IconText(Icon):
     text: str
     center: bool = False
     scale: float = 0.5
 
     def generate(self):
-        img = Image.new(
-            "RGBA",
-            (TILE_WIDTH, TILE_HEIGHT),
-            (0, 0, 0, 0),
-        )
-        img_draw = ImageDraw.Draw(img)
-
         font = ImageFont.truetype(
             FONT_PATH,
             math.floor(TILE_HEIGHT * self.scale),
@@ -169,7 +183,7 @@ class IconText:
 
         anchor = "ms" if self.center else "ls"
 
-        text_bbox = img_draw.textbbox(
+        text_bbox = self.draw.textbbox(
             (0, 0),
             self.text,
             font=font,
@@ -182,7 +196,7 @@ class IconText:
             (TILE_HEIGHT * 0.8) - text_bbox[3],
         )
 
-        img_draw.multiline_text(
+        self.draw.multiline_text(
             text_xy,
             self.text,
             font=font,
@@ -191,17 +205,233 @@ class IconText:
             fill="white",
         )
 
-        euclid = euclidean_distance_transform(img.getchannel("A"))
-        img = add_outline_via_euclidean_distance_transform(img, euclid)
-
-        return img
+        return apply_outline(self.img)
 
 
-ICONS = [
-    IconImage(1, "signal", scale=1.2),  # RSSI
-    IconSvg(2, "chevron-left"),
-    IconSvg(3, "chevron-right"),
-    IconSvg(4, "speedometer"),
+@dataclasses.dataclass
+class IconStickOverlay(Icon):
+    position: Literal["high", "middle", "low"]
+
+    def generate(self) -> Image.Image:
+        x_middle = TILE_WIDTH // 2
+        if self.position == "high":
+            coords = (x_middle, TILE_HEIGHT * 0.2)
+        elif self.position == "middle":
+            coords = (x_middle, TILE_HEIGHT * 0.5)
+        elif self.position == "low":
+            coords = (x_middle, TILE_HEIGHT * 0.8)
+        else:
+            raise ValueError(f"Invalid position: {self.position}")
+
+        self.draw.ellipse(
+            (
+                (coords[0] - 4, coords[1] - 4),
+                (coords[0] + 4, coords[1] + 4),
+            ),
+            fill="white",
+        )
+
+        return apply_outline(self.img)
+
+
+class IconStickCenterLine(Icon):
+    def generate(self) -> Image.Image:
+        self.draw.line(
+            (
+                (TILE_WIDTH // 2, 0),
+                (TILE_WIDTH // 2, TILE_HEIGHT),
+            ),
+            fill="white",
+            width=3,
+        )
+
+        self.draw.line(
+            (
+                (0, TILE_HEIGHT // 2),
+                (TILE_WIDTH, TILE_HEIGHT // 2),
+            ),
+            fill="white",
+            width=3,
+        )
+
+        return apply_outline(self.img)
+
+
+class IconStickVerticalLine(Icon):
+    def generate(self) -> Image.Image:
+        self.draw.line(
+            (
+                (TILE_WIDTH // 2, 0),
+                (TILE_WIDTH // 2, TILE_HEIGHT),
+            ),
+            fill="white",
+            width=3,
+        )
+
+        return apply_outline(self.img)
+
+
+class IconStickHorizontalLine(Icon):
+    def generate(self) -> Image.Image:
+        self.draw.line(
+            (
+                (0, TILE_HEIGHT // 2),
+                (TILE_WIDTH, TILE_HEIGHT // 2),
+            ),
+            fill="white",
+            width=3,
+        )
+
+        return apply_outline(self.img)
+
+
+@dataclasses.dataclass
+class IconHeading(Icon):
+    divided: bool
+
+    def generate(self) -> Image.Image:
+        coords = (
+            (TILE_WIDTH / 2, TILE_HEIGHT * 0.2),
+            (TILE_WIDTH / 2, TILE_HEIGHT * (0.5 if self.divided else 0.8)),
+        )
+
+        self.draw.rounded_rectangle(
+            (
+                (coords[0][0] - 1.5, coords[0][1]),
+                (coords[1][0] + 1.5, coords[1][1]),
+            ),
+            fill="white",
+            radius=1,
+        )
+
+        return apply_outline(self.img)
+
+
+@dataclasses.dataclass
+class IconHeadingDecoration(Icon):
+    def generate(self) -> Image.Image:
+        width = 3
+        width_2 = width / 2
+
+        self.draw.rounded_rectangle(
+            (
+                (TILE_WIDTH * 0.45, -10),
+                (TILE_WIDTH * 0.55, TILE_HEIGHT * 0.1),
+            ),
+            fill="white",
+            radius=1,
+        )
+
+        self.draw.rounded_rectangle(
+            (
+                (TILE_WIDTH * 0.33, TILE_HEIGHT / 2 - width_2),
+                (TILE_WIDTH * 0.66, TILE_HEIGHT / 2 + width_2),
+            ),
+            fill="white",
+            radius=1,
+        )
+
+        self.draw.rounded_rectangle(
+            (
+                (TILE_WIDTH * 0.45, TILE_HEIGHT * 0.9),
+                (TILE_WIDTH * 0.55, TILE_HEIGHT + 10),
+            ),
+            fill="white",
+            radius=1,
+        )
+
+        return apply_outline(self.img)
+
+
+@dataclasses.dataclass
+class IconBarCap(Icon):
+    side: Literal["left", "right"]
+
+    def generate(self) -> Image.Image:
+        if self.side == "left":
+            coords = (
+                (TILE_WIDTH - 1.5, TILE_HEIGHT * 0.25 - 1.5),
+                (TILE_WIDTH - 1.5, TILE_HEIGHT * 0.75 + 1),
+            )
+        elif self.side == "right":
+            coords = (
+                (1.5, TILE_HEIGHT * 0.25 - 1.5),
+                (1.5, TILE_HEIGHT * 0.75 + 1),
+            )
+        else:
+            raise ValueError(f"Invalid side: {self.side}")
+
+        self.draw.line(
+            coords,
+            fill="white",
+            width=3,
+        )
+
+        return apply_outline(self.img)
+
+
+@dataclasses.dataclass
+class IconBar(Icon):
+    section: Literal["full", "half_full", "empty", "end"]
+
+    def generate(self) -> Image.Image:
+        if self.section == "full":
+            self.draw.rectangle(
+                (
+                    (-10, TILE_HEIGHT * 0.25),
+                    (TILE_WIDTH + 10, TILE_HEIGHT * 0.75),
+                ),
+                fill="white",
+            )
+        elif self.section == "half_full":
+            self.draw.rectangle(
+                (
+                    (-10, TILE_HEIGHT * 0.25),
+                    (TILE_WIDTH / 2, TILE_HEIGHT * 0.75),
+                ),
+                fill="white",
+            )
+        elif self.section == "empty":
+            pass
+        elif self.section == "end":
+            self.draw.rectangle(
+                (
+                    (-10, TILE_HEIGHT * 0.25),
+                    (2, TILE_HEIGHT * 0.75),
+                ),
+                fill="white",
+            )
+
+        self.draw.line(
+            (
+                -10,
+                TILE_HEIGHT * 0.25,
+                TILE_WIDTH + 10,
+                TILE_HEIGHT * 0.25,
+            ),
+            fill="white",
+            width=3,
+        )
+
+        self.draw.line(
+            (
+                -10,
+                TILE_HEIGHT * 0.75,
+                TILE_WIDTH + 10,
+                TILE_HEIGHT * 0.75,
+            ),
+            fill="white",
+            width=3,
+        )
+
+        return apply_outline(self.img)
+
+
+ICONS: Sequence[Icon] = [
+    IconSvg(1, "signal"),  # RSSI
+    IconSvg(2, "chevron-left", offset_x=TILE_WIDTH * 0.2),  # Horizon
+    IconSvg(3, "chevron-right", offset_x=TILE_WIDTH * -0.2),  # Horizon
+    IconSvg(4, "flash"),  # Throttle
     IconSvg(5, "home"),  # Home
     IconText(6, "v"),  # Voltage Unit
     IconText(7, "mah", scale=0.4),  # mAh
@@ -209,58 +439,81 @@ ICONS = [
     IconText(13, "°f"),  # Temp Unit (F)
     IconText(14, "°c"),  # Temp Unit (C)
     IconText(15, "ft"),  # Alt Unit (ft)
-    IconSvg(20, "axis-z-rotate-clockwise"),  # "Roll" ???  TODO: Graphic?
-    IconSvg(21, "horizontal-rotate-clockwise"),  # "Pitch" ???  TODO: Graphic?
-    # Cardinal Directions (NSEW)
-    IconText(24, "N"),
-    IconText(25, "S"),
-    IconText(26, "E"),
-    IconText(27, "W"),
-    # IconImage(60, "left"),  # Override < Char
-    # IconImage(62, "right"),  # Override > Char
+    IconSvg(16, "cube"),  # Blackbox
+    IconSvg(17, "home-map-marker"),  # Home Marker
+    IconEmpty(18),  # RPM? Unused.
+    IconHeadingDecoration(19),  # Weird Heading Decoration Thing
+    IconSvg(20, "axis-x-rotate-clockwise"),  # "Roll"
+    IconSvg(21, "horizontal-rotate-clockwise"),  # "Pitch"
+    # Headings (NSEW)
+    IconText(24, "N", center=True, scale=0.8),
+    IconText(25, "S", center=True, scale=0.8),
+    IconText(26, "E", center=True, scale=0.8),
+    IconText(27, "W", center=True, scale=0.8),
+    IconHeading(28, True),
+    IconHeading(29, False),
+    # Satellite (2x1)
+    IconEmpty(30),
+    IconSvg(31, "satellite-variant", scale=0.9),
     IconSvg(112, "speedometer"),  # Speedometer
     IconSvg(113, "rotate-left"),  # Anti-clockwise ????
     # Crosshair (3x1)
     IconEmpty(114),
-    IconSvg(115, "crosshairs-gps", False),
+    IconSvg(115, "crosshairs", scale=0.9, with_background=True),
     IconEmpty(116),
-    IconSvg(117, "chevron-double-up"),  # Up Chevron
-    IconSvg(118, "chevron-double-down"),  # Down Chevron
-    IconSvg(119, "chevron-double-right"),  # Right Chevron
-    IconSvg(120, "chevron-double-left"),  # Left Chevron
+    IconSvg(117, "chevron-double-up", offset_y=TILE_HEIGHT * -0.25),  # Up Chevron
+    IconSvg(118, "chevron-double-down", offset_y=TILE_HEIGHT * 0.25),  # Down Chevron
+    IconEmpty(119),  # Unused
+    IconEmpty(120),  # Unused
     IconSvg(122, "thermometer"),  # Thermometer
-    IconImage(123, "signal", scale=1.2),  # RSSI (LQ)
+    IconSvg(123, "signal"),  # RSSI (LQ)
+    IconEmpty(124),  # Unused
     IconText(125, "km"),  # Dist Unit (km)
     IconText(126, "mi"),  # Dist Unit (mi)
     IconSvg(127, "altimeter"),  # "Alt" ???
     IconSvg(137, "latitude"),  # Longitude ("Lon")
+    IconBarCap(138, "left"),  # Left Bar Cap
+    IconBar(139, "full"),  # Full Bar
+    IconBar(140, "half_full"),  # Half Full Bar
+    IconBar(141, "empty"),  # Empty Bar
+    IconBar(142, "end"),  # End Bar
+    IconBarCap(143, "right"),  # Right Bar Cap
     # Battery
-    IconImage(144, "battery_full", scale=1.25),
-    IconImage(145, "battery_5_bar", scale=1.25),
-    IconImage(146, "battery_4_bar", scale=1.25),
-    IconImage(147, "battery_3_bar", scale=1.25),
-    IconImage(148, "battery_2_bar", scale=1.25),
-    IconImage(149, "battery_1_bar", scale=1.25),
-    IconImage(150, "battery_0_bar", scale=1.25),
-    IconImage(151, "battery_alert", scale=1.25),
+    IconSvg(144, "battery"),
+    IconSvg(145, "battery-90"),
+    IconSvg(146, "battery-80"),
+    IconSvg(147, "battery-60"),
+    IconSvg(148, "battery-40"),
+    IconSvg(149, "battery-30"),
+    IconSvg(150, "battery-20"),
+    IconSvg(151, "battery-alert"),
     IconSvg(152, "longitude"),  # Longitude ("Lon")
     IconText(153, "ft/s", scale=0.4),  # Speed Unit (ft/s)
     IconText(154, "a"),  # Amps Unit
-    IconSvg(155, "airplane-clock"),  # Timer (On) TODO: Clock graphic?
-    IconSvg(156, "battery-clock"),  # Timer (On) TODO: Drone clock graphic?
+    IconSvg(155, "airplane-clock", scale=0.8),  # Timer (On) TODO: Clock graphic?
+    IconSvg(156, "battery-clock", scale=0.8),  # Timer (On) TODO: Drone clock graphic?
     IconText(157, "mph", scale=0.4),  # Speed Unit (mph)
     IconText(158, "kph", scale=0.4),  # Speed Unit (kph)
     IconText(159, "m/s", scale=0.4),  # Speed Unit (m/s)
+    # Stick Overlay
+    IconStickOverlay(8, "high"),  # Stick High
+    IconStickOverlay(9, "middle"),  # Stick Medium
+    IconStickOverlay(10, "low"),  # Stick Low
+    IconStickCenterLine(11),  # Stick Center
+    IconStickVerticalLine(22),  # Stick Vertical
+    IconStickHorizontalLine(23),  # Stick Vertical
+    # Char Overrides
+    IconText(36, "MAX", center=True, scale=0.4),  # Max
 ]
 
 
-def get_path_to_material_icon(
-    icon_name: str,
-) -> str | None:
-    return f"icons/material/{icon_name}.png"
-
-
-def get_icon_image(icon: IconImage) -> Image.Image:
+def get_icon_image(
+    icon: Union[
+        IconEmpty,
+        IconSvg,
+        IconText,
+    ]
+) -> Image.Image:
     print(icon)
     if isinstance(icon, IconEmpty):
         return Image.new("RGBA", (TILE_WIDTH, TILE_HEIGHT), (0, 0, 0, 0))
@@ -312,16 +565,101 @@ def get_char_image() -> Image.Image:
             anchor="ms",
         )
 
-    euclid = euclidean_distance_transform(img.getchannel("A"))
-    outline = add_outline_via_euclidean_distance_transform(img, euclid)
+    return apply_outline(img)
 
-    return outline
+
+def get_logo_image() -> Image.Image:
+    logo_tile_width = 24
+    logo_tile_height = 4
+    logo_tile_count = logo_tile_width * logo_tile_height
+    logo_tile_rows = logo_tile_count // TILES_PER_ROW
+
+    logo_img_small = load_svg(
+        "./icons/fpvwtf.svg",
+        width=int(logo_tile_width * TILE_WIDTH * 0.8),
+        height=int(logo_tile_height * TILE_HEIGHT * 0.8),
+    )
+
+    logo_img = Image.new(
+        "RGBA",
+        (logo_tile_width * TILE_WIDTH, logo_tile_height * TILE_HEIGHT),
+        (0, 0, 0, 0),
+    )
+
+    logo_img.paste(
+        logo_img_small,
+        (
+            (logo_img.width - logo_img_small.width) // 2,
+            (logo_img.height - logo_img_small.height) // 2,
+        ),
+    )
+
+    logo_img = apply_outline(logo_img)
+
+    logo_tiled_img = Image.new(
+        "RGBA",
+        (TILE_WIDTH * TILES_PER_ROW, TILE_HEIGHT * logo_tile_rows),
+        (0, 0, 0, 0),
+    )
+
+    for y in range(logo_tile_height):
+        for x in range(logo_tile_width):
+            logo_this_tile = logo_img.crop(
+                (
+                    x * TILE_WIDTH,
+                    y * TILE_HEIGHT,
+                    (x + 1) * TILE_WIDTH,
+                    (y + 1) * TILE_HEIGHT,
+                )
+            )
+
+            tile_index = y * logo_tile_width + x
+            tile_x = tile_index % TILES_PER_ROW * TILE_WIDTH
+            tile_y = tile_index // TILES_PER_ROW * TILE_HEIGHT
+
+            logo_tiled_img.paste(logo_this_tile, (tile_x, tile_y))
+
+    return logo_tiled_img
+
+
+def get_horizon_image() -> Image.Image:
+    horizon_width = 9
+    line_width = 8
+
+    img = Image.new(
+        "RGBA",
+        (TILE_WIDTH * horizon_width, TILE_HEIGHT),
+        (0, 0, 0, 0),
+    )
+
+    for i in range(0, horizon_width):
+        tile_img = Image.new(
+            "RGBA",
+            (TILE_WIDTH, TILE_HEIGHT),
+            (0, 0, 0, 0),
+        )
+
+        tile_draw = ImageDraw.Draw(tile_img)
+        line_y = (line_width / 2) + (TILE_HEIGHT - line_width / 2) * (i / horizon_width)
+        tile_draw.line(
+            (
+                (0, line_y),
+                (TILE_WIDTH, line_y),
+            ),
+            fill="white",
+            width=line_width,
+        )
+
+        tile_img = apply_outline(tile_img)
+
+        img.paste(tile_img, (i * TILE_WIDTH, 0))
+
+    return img
 
 
 def add_outline_via_euclidean_distance_transform(
     img: Image.Image, euclid: Image.Image, radius=3
 ) -> Image.Image:
-    return img
     img = img.copy()
     outline = Image.new("L", img.size, 0)
 
@@ -372,7 +710,6 @@ OCTAGON_PATTERN_9x9 = [
 
 
 def euclidean_distance_transform(img: Image.Image) -> Image.Image:
-    return img
     img = Image.eval(img, lambda x: 255 if x > 100 else 0)
     ed_img = Image.new("L", img.size, 0)
 
@@ -426,8 +763,14 @@ def main():
     arrows_img = get_arrows_image()
     out.paste(arrows_img, (0, TILE_HEIGHT * 6))
 
+    horizon_img = get_horizon_image()
+    out.paste(horizon_img, (0, TILE_HEIGHT * 8))
+
+    logo_img = get_logo_image()
+    out.paste(logo_img, (0, TILE_HEIGHT * 10))
+
     for icon in ICONS:
-        icon_img = get_icon_image(icon)
+        icon_img = icon.generate()
         tile_x = icon.index % TILES_PER_ROW * TILE_WIDTH
         tile_y = icon.index // TILES_PER_ROW * TILE_HEIGHT
 

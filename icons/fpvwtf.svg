@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg preserveAspectRatio="xMidYMid" version="1.1" viewBox="0 0 160.24 110.47" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <defs>
+  <path id="c5kh9qbGn" d="m531.53 647.48 0.03-0.03h-0.03v0.03z"/>
+  <path id="bWEy9P3on" d="m531.53 647.48h0.03v-0.03c0.01 0-0.02 0.02-0.03 0.03z"/>
+  <path id="byMGWoiNa" d="m428.47 647.48v-0.03h-0.03c0 0.01 0.02 0.02 0.03 0.03z"/>
+  <path id="e1wOKaxTq3" d="m516.49 551.76v13.27h14.93v-13.27h-14.93z"/>
+  <path id="aENRvQGlV" d="m531.42 593.23v-14.93h-14.93v-13.27h-14.93v13.27h-21.56-21.56v-13.27h-14.93v13.27h-14.93v14.93h-13.27v-28.2h-14.93v54.74h13.27v14.92h14.93v12.85c-3.78 0.05-7.36 0.05-11.14 0.1-0.8 0.01-2.13 0-2.13 0v13.59h13.13c0-4.82 0.19-8.91 0.2-13.27h14.87v-13.27h36.49 36.49v13.27h14.87c0.01 4.36 0.2 8.45 0.2 13.27h13.13v-13.59s-1.33 0.01-2.13 0c-3.78-0.05-7.36-0.05-11.14-0.1v-12.85h14.93v-14.92h13.27v-54.74h-14.93v28.2h-13.27zm-72.98 21.56h-14.93v-8.29-4.98h14.93v4.98 8.29zm58.05 0h-14.93v-8.29-4.98h14.93v4.98 8.29z"/>
+  <path id="d9Yl8is9" d="m428.58 565.03h14.93v-13.27h-14.93v13.27z"/>
+  <path id="a1BAo4vrJi" d="m428.47 647.48-0.03-0.03v0.03h0.03z"/>
+ </defs>
+ <g transform="translate(-399.88,-551.26)">
+  <use fill="#3c7dbd" xlink:href="#c5kh9qbGn"/>
+  <use fill-opacity="0" stroke="#000000" stroke-opacity="0" xlink:href="#c5kh9qbGn"/>
+  <use fill="#3c7dbd" xlink:href="#bWEy9P3on"/>
+  <use fill-opacity="0" stroke="#000000" stroke-opacity="0" xlink:href="#bWEy9P3on"/>
+  <use fill="#3c7dbd" xlink:href="#byMGWoiNa"/>
+  <use fill-opacity="0" stroke="#000000" stroke-opacity="0" xlink:href="#byMGWoiNa"/>
+  <use fill="#3c7dbd" xlink:href="#e1wOKaxTq3"/>
+  <use fill-opacity="0" stroke="#000000" stroke-opacity="0" xlink:href="#e1wOKaxTq3"/>
+  <use fill="#3c7dbd" xlink:href="#aENRvQGlV"/>
+  <use fill-opacity="0" stroke="#000000" stroke-opacity="0" xlink:href="#aENRvQGlV"/>
+  <use fill="#3c7dbd" xlink:href="#d9Yl8is9"/>
+  <use fill-opacity="0" stroke="#000000" stroke-opacity="0" xlink:href="#d9Yl8is9"/>
+  <use fill="#3c7dbd" xlink:href="#a1BAo4vrJi"/>
+  <use fill-opacity="0" stroke="#000000" stroke-opacity="0" xlink:href="#a1BAo4vrJi"/>
+ </g>
+</svg>
