@@ -457,10 +457,6 @@ ICONS: Sequence[Icon] = [
     IconSvg(31, "satellite-variant", scale=0.9),
     IconSvg(112, "speedometer"),  # Speedometer
     IconSvg(113, "rotate-left"),  # Anti-clockwise ????
-    # Crosshair (3x1)
-    IconEmpty(114),
-    IconSvg(115, "crosshairs", scale=0.9, with_background=True),
-    IconEmpty(116),
     IconSvg(117, "chevron-double-up", offset_y=TILE_HEIGHT * -0.25),  # Up Chevron
     IconSvg(118, "chevron-double-down", offset_y=TILE_HEIGHT * 0.25),  # Down Chevron
     IconEmpty(119),  # Unused
@@ -749,19 +745,37 @@ def euclidean_distance_transform(img: Image.Image) -> Image.Image:
     return ed_img
 
 
+def get_crosshair_image():
+    # split crosshair over two tiles because betaflight is insane
+    img = Image.new(
+        "RGBA",
+        (TILE_WIDTH * 2, TILE_HEIGHT),
+        (0, 0, 0, 0),
+    )
+
+    crosshair_img = IconSvg(
+        115, "crosshairs", scale=0.9, with_background=True
+    ).generate()
+    img.paste(crosshair_img, (crosshair_img.width // 2, 0))
+
+    return img
+
+
 def main():
     overlay = Image.open("template_overlay.png")
     overlay = overlay.convert("RGB")
     overlay = Image.eval(overlay, lambda x: x * 0.25 + 128)
 
-    template = Image.open("betaflight_template.png")
-    out = template.copy()
+    out = Image.new("RGBA", overlay.size, (0, 0, 0, 0))
 
     chars_img = get_char_image()
     out.paste(chars_img, (0, TILE_HEIGHT * 2))
 
     arrows_img = get_arrows_image()
     out.paste(arrows_img, (0, TILE_HEIGHT * 6))
+
+    crosshair_img = get_crosshair_image()
+    out.paste(crosshair_img, (TILE_WIDTH * 2, TILE_HEIGHT * 7))
 
     horizon_img = get_horizon_image()
     out.paste(horizon_img, (0, TILE_HEIGHT * 8))
