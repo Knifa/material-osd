@@ -433,8 +433,8 @@ ICONS: Sequence[Icon] = [
     IconSvg(3, "chevron-right", offset_x=TILE_WIDTH * -0.2),  # Horizon
     IconSvg(4, "flash"),  # Throttle
     IconSvg(5, "home"),  # Home
-    IconText(6, "v"),  # Voltage Unit
-    IconText(7, "mah", scale=0.4),  # mAh
+    IconText(6, "V"),  # Voltage Unit
+    IconText(7, "mAh", scale=0.33),  # mAh
     IconText(12, "m"),  # Alt Unit (m)
     IconText(13, "°f"),  # Temp Unit (F)
     IconText(14, "°c"),  # Temp Unit (C)
@@ -484,13 +484,13 @@ ICONS: Sequence[Icon] = [
     IconSvg(150, "battery-20"),
     IconSvg(151, "battery-alert"),
     IconSvg(152, "longitude"),  # Longitude ("Lon")
-    IconText(153, "ft/s", scale=0.4),  # Speed Unit (ft/s)
-    IconText(154, "a"),  # Amps Unit
+    IconText(153, "ft/s", scale=0.33),  # Speed Unit (ft/s)
+    IconText(154, "A"),  # Amps Unit
     IconSvg(155, "airplane-clock", scale=0.8),  # Timer (On) TODO: Clock graphic?
     IconSvg(156, "battery-clock", scale=0.8),  # Timer (On) TODO: Drone clock graphic?
-    IconText(157, "mph", scale=0.4),  # Speed Unit (mph)
-    IconText(158, "kph", scale=0.4),  # Speed Unit (kph)
-    IconText(159, "m/s", scale=0.4),  # Speed Unit (m/s)
+    IconText(157, "mph", scale=0.33),  # Speed Unit (mph)
+    IconText(158, "km/h", scale=0.33),  # Speed Unit (kph)
+    IconText(159, "m/s", scale=0.33),  # Speed Unit (m/s)
     # Stick Overlay
     IconStickOverlay(8, "high"),  # Stick High
     IconStickOverlay(9, "middle"),  # Stick Medium
